@@ -1,0 +1,64 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<br>
+<div class="form-group row">
+  <!-- **Show balance of power** -->
+  <div class='col-6'>
+    <h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">My Current Energy</h2>
+    <br>
+    <div class="form-group row">
+      <div class="col-4">
+        <h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">{{power}}</h2>
+        <!--<input type="text" class="form-control" value={{emoney}} name="unit" style="font-size:3vh;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 1px;padding-left: 20px;" disabled>-->
+      </div>
+      <div class="col-2">
+        <h2>kWh</h2>
+      </div>
+    </div>
+  </div>
+  <!-- **Show balance e-coin value** -->
+  <div class='col-6'>
+    <h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">My Balance</h2>
+    <br>
+    <div class="form-group row">
+      <div class="col-4">
+        <h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">{{money}}</h2>
+        <!--<input type="text" class="form-control" value="10000" name="unit" style="font-size:3vh;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 1px;padding-left: 20px;">-->
+      </div>
+      <div class="col-2">
+        <h2>THB</h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- History -->
+<br>
+<h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">History</h2>
+<br>
+<!-- **Show history table** -->
+<table class="table table-dark table-striped">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Type</th>
+        <th scope="col">Energy (kWh)</th>
+        <th scope="col">Price (THB)</th>
+        <th scope="col">Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for post in posts %}
+      <tr>
+        <th scope="row">{{ post.id }}</th>
+        <td>{{ post.transection }}</td>
+        <td>{{ post.energy }}</td>
+        <td>{{ post.price }}</td>
+        <td>{{ post.timestamp }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

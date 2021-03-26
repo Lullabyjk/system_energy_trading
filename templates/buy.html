@@ -1,0 +1,55 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<br>
+<h1 style="font-size:2vw;border-left-width:1000;font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;"; right = 1000px;>Buy</h1>
+<br>
+
+{% if messages %}
+<div class="alert alert-danger" role="alert">
+    {% for message in messages %}
+        {{message}}
+    {% endfor %}
+</div>
+{% endif %}
+
+<form action="/buyMatch/" method="post">
+    {% csrf_token %}
+    <div class = "form-group row">
+        <label class = "col-1 col-form-label" for=""><h5>Unit :</h5></label>
+        <div class = 'col-2'>
+            <input type="text" class="form-control" name="unit" placeholder={{power}} required> 
+        </div>
+        <label class = "col-1 col-form-label" for=""><h5>kWh</h5></label>
+    </div><br>
+    <div class = "form-group row">
+        <label class = "col-1 col-form-label" for=""><h5>Price :</h5></label>
+        <div class = 'col-2'>
+            <input type="text" class="form-control"  name="price" required> 
+        </div>
+        <label class = "col-1 col-form-label" for=""><h5>THB</h5></label>
+    </div><br>
+    <input type="submit" value="submit" class="btn btn-primary ">
+</form>
+<br>
+<h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">List of selling</h2>
+<br>
+<table class="table table-dark table-striped">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Energy</th>
+        <th scope="col">Price</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for post in posts %}
+      <tr>
+        <th scope="row">{{ post.id }}</th>
+        <td>{{ post.energy }}</td>
+        <td>{{ post.price }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
