@@ -11,9 +11,11 @@ class Post1(models.Model):
 
 class Sell(models.Model):
     user=models.CharField(max_length=200)
+    fname=models.CharField(max_length=200)
     blob=models.TextField()
     energy=models.IntegerField()
     price=models.IntegerField()
+    ttlprice=models.IntegerField()
     timestamp =models.DateTimeField()
 
 class History(models.Model):
@@ -22,12 +24,18 @@ class History(models.Model):
     transection=models.TextField()
     energy=models.IntegerField()
     price=models.IntegerField()
+    ttlprice=models.IntegerField()
     timestamp=models.DateTimeField()
     status=models.CharField(max_length=200)
+    partner_name=models.CharField(max_length=200)
+    txid=models.TextField()
 
 class rpcConfig(models.Model):
     username=models.CharField(max_length=200)
     rpc_password=models.CharField(max_length=200)
     rpc_host=models.CharField(max_length=200)
+
+
+
 
 
