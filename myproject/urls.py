@@ -32,5 +32,7 @@ urlpatterns = [
     path('sell/',views.sell),
     path('sellForm/',views.sellForm),
     path('info/',views.info),
-    path('aiAuanNook/',views.aiAuanNook)
+    path('topUp/',views.topUp),
+    path('deposit/',views.deposit),
+    path('api/v1/calcualtePriceSellAmount',views.calcualtePriceSellAmount)
 ]
