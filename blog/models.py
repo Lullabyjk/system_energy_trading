@@ -13,18 +13,18 @@ class Sell(models.Model):
     user=models.CharField(max_length=200)
     fname=models.CharField(max_length=200)
     blob=models.TextField()
-    energy=models.IntegerField()
-    price=models.IntegerField()
-    ttlprice=models.IntegerField()
+    energy=models.FloatField()
+    price=models.FloatField()
+    ttlprice=models.FloatField()
     timestamp =models.DateTimeField()
 
 class History(models.Model):
     user=models.CharField(max_length=200)
     blob=models.TextField()
     transection=models.TextField()
-    energy=models.IntegerField()
-    price=models.IntegerField()
-    ttlprice=models.IntegerField()
+    energy=models.FloatField()
+    price=models.FloatField()
+    ttlprice=models.FloatField()
     timestamp=models.DateTimeField()
     status=models.CharField(max_length=200)
     partner_name=models.CharField(max_length=200)
@@ -34,6 +34,14 @@ class rpcConfig(models.Model):
     username=models.CharField(max_length=200)
     rpc_password=models.CharField(max_length=200)
     rpc_host=models.CharField(max_length=200)
+    permission=models.IntegerField()
+
+class walletTopUp(models.Model):
+    user=models.CharField(max_length=200)
+    address=models.TextField()
+    money=models.FloatField()
+    timestamp =models.DateTimeField()
+
 
 
 
