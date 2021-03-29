@@ -1,5 +1,5 @@
 from django.shortcuts import render,redirect
-from .models import Post, Sell, History ,rpcConfig
+from .models import Post, Sell, History ,rpcConfig, walletTopUp
 from django.contrib.auth.models import User,auth
 from django.contrib import messages
 from Savoir import Savoir
@@ -20,8 +20,8 @@ def getApi(username):
     rpcuser = 'multichainrpc'
     rpcpasswd = rpc_config
     rpchost = rpcConfig.objects.filter(username=username).values_list('rpc_host', flat=True)[0]
-    rpcport = '4392'
-    chainname = 'energytd'
+    rpcport = '9228'
+    chainname = 'energytp'
     api = Savoir(rpcuser, rpcpasswd, rpchost, rpcport, chainname)
     return api
 
@@ -32,11 +32,15 @@ def getBalanceWallet(api):
     for address in api.listaddresses():
         if address.get("ismine") == True:
             address = address.get("address")
+    
     listBalance = api.getmultibalances()['total']
     ##Check balance of ecoin and energy
     myList = []
     ##Have only [ecoin or energy]
-    if len(listBalance) == 1:
+    if len(listBalance) == 0:
+        myList.insert(0, 0)
+        myList.insert(1, 0)
+    elif len(listBalance) == 1:
             if listBalance[0]['name'] == 'ecoin':
                     myList.insert(0, api.getmultibalances()[address][0].get('qty'))
                     myList.insert(1, 0)
@@ -51,7 +55,9 @@ def getBalanceWallet(api):
             else:
                     myList.insert(0, api.getmultibalances()[address][1].get('qty'))
                     myList.insert(1, api.getmultibalances()[address][0].get('qty'))  
-    ##myList = [ ecoin, energy]
+    ##Insert adddress in list
+    myList.insert(2, str(address))  
+    ##myList = [ ecoin, energy, address]
     return myList                                                                                                                                                                                                                      
                                                                                                                                                                                                                                                                                                     
 def sellForm(request):    
@@ -61,7 +67,7 @@ def sellForm(request):
     api = getApi(username)                                                                                                           
     tenergy = request.POST['unit']                                          
     tprice = request.POST['price']
-    ttlprice = float(tenergy) * float(tprice)
+    ttlprice = f"{(float(tenergy) * float(tprice)):.2f}"
     timestamp = datetime.now()
     print(username)                   
     print(tenergy)                                                                                                                                                  
@@ -77,9 +83,9 @@ def sellForm(request):
     myEnergy = myBalance[1]
     print(myEnergy)
     print(tenergy)
-    if(int(myEnergy)>=int(tenergy)):
+    if(float(myEnergy)>=float(tenergy)):
         res = api.preparelockunspent ({"energy": float(tenergy)})
-        tblob = api.createrawexchange(res["txid"], res["vout"],{"ecoin": float(tprice)})
+        tblob = api.createrawexchange(res["txid"], res["vout"],{"ecoin": float(ttlprice)})
 
         #insert data into table Sell
         insertSell = Sell.objects.create(user=str(username), blob=str(tblob), energy=float(tenergy) ,price=float(tprice), ttlprice=float(ttlprice), timestamp=timestamp, fname=str(firstName[0][0]))
@@ -94,16 +100,12 @@ def sellForm(request):
         messages.info(request,'Your amount energy is not enough.')
 
     data=History.objects.filter(user=username, transection='Offer', status='Pending').all().order_by('status','-id')
-    return render(request,'sell.html', {
-        'posts':data,
-        'power':myEnergy,
-        'money':myEcoin,
-        })
+    return redirect('/sell')
 
 def buyMatch(request):
     unit = request.POST['unit']
     price = request.POST['price']
-    ttlprice = float(unit)*float(price)
+    ttlprice = f"{(float(unit) * float(price)):.2f}"
     timestamp = datetime.now()
     # print(unit)
     # print(price)
@@ -166,10 +168,7 @@ def buyMatch(request):
     else:
         messages.info(request,'Not found offering match with your biding.')   
     data=Sell.objects.all().exclude(user=username)
-    return render(request,'buy.html', {
-        'posts':data,
-        'power':myPower
-        })
+    return redirect('/buy')
 
 # Create your views here.
 def home(request):
@@ -178,7 +177,6 @@ def home(request):
     myWallet = getBalanceWallet(api)
     energy = myWallet[1]
     ecoin = myWallet[0]
-    
     #1.Caculate Total Sell
     #1.1) #Caculate Total Sell -> Status pending
     totalPending=History.objects.filter(user=username, transection='Offer',status='Pending').values_list('energy', 'ttlprice')
@@ -250,10 +248,109 @@ def form(request):
     return render(request,'form.html')
 
 def topUp(request):
-    return render(request,'topUp.html')
+    if request.method == 'POST':
+        username = request.user
+        timestamp = datetime.now()
+        api = getApi(username)
+        #Get firstname
+        fname = User.objects.filter(username=username).values_list('first_name')
+        firtName = str(fname[0][0])
+        #Gets my energy balance
+        myBalance = getBalanceWallet(api)
+        myEcoin = myBalance[0]
+        address = myBalance[2]
+        #Get input
+        money = request.POST['moneyTopUp']
+        print(money)
+        #Insert transection into TouUp database
+        insertTopUp = walletTopUp.objects.create(user=str(username), address=address, money=money,timestamp=timestamp)
+        insertTopUp.save()
+        
+        #select data from history
+        data=walletTopUp.objects.filter(user=username).all().order_by('-id')
+        #Caculate Total Deposit
+        totalTopUp=History.objects.filter(user=username, transection='TopUp').values_list('ttlprice')
+        moneyTopUpList = []
+        rangeOfTopUptList = int(len(totalTopUp))
+        for n in range(rangeOfTopUptList):
+            moneyTopUpList.append(float(totalTopUp[n][0]))
+        totalMoneyTopUp = float(sum(moneyTopUpList))
+        return redirect('/topUp')
+    else:
+        username = request.user
+        api = getApi(username)
+        #Gets my energy balance
+        myBalance = getBalanceWallet(api)
+        myEcoin = myBalance[0]
+        #select data from history
+        data=walletTopUp.objects.filter(user=username).all().order_by('-id')
+        #Caculate Total Deposit
+        totalTopUp=History.objects.filter(user=username, transection='TopUp').values_list('ttlprice')
+        moneyTopUpList = []
+        rangeOfTopUptList = int(len(totalTopUp))
+        for n in range(rangeOfTopUptList):
+            moneyTopUpList.append(float(totalTopUp[n][0]))
+        totalMoneyTopUp = float(sum(moneyTopUpList))
+        return render(request,'topUp.html',
+        {
+        'money': myEcoin,
+        'data': data,
+        'totalTopUp': totalMoneyTopUp
+        })
 
 def deposit(request):
-    return render(request,'deposit.html')
+    if request.method == 'POST':
+        username = request.user
+        timestamp = datetime.now()
+        api = getApi(username)
+        #Get firstname
+        fname = User.objects.filter(username=username).values_list('first_name')
+        firtName = str(fname[0][0])
+        #Gets my energy balance
+        myBalance = getBalanceWallet(api)
+        myPower = myBalance[1]
+        address = myBalance[2]
+        #Get input
+        power = request.POST['energyDeposit']
+        print(power)
+        #Process add energy
+        api.issuemore(address, "energy", float(power))
+        #Insert transection add energy
+        insertHistory = History.objects.create(user=str(username), transection='Deposit', energy=float(power), price=0, ttlprice=0, timestamp=timestamp, blob="", status="", partner_name="-", txid="")
+        insertHistory.save()
+        #select data from history
+        data=History.objects.filter(user=username, transection='Deposit').all().order_by('-id')
+        #Caculate Total Deposit
+        totalDeposit=History.objects.filter(user=username, transection='Deposit').values_list('energy')
+        depositEnergyList = []
+        rangeOfDepositList = int(len(totalDeposit))
+        for n in range(rangeOfDepositList):
+            depositEnergyList.append(float(totalDeposit[n][0]))
+        totalDepositEnergy = float(sum(depositEnergyList))
+        return redirect('/deposit')
+    else:
+        username = request.user
+        api = getApi(username)
+        #Gets my energy balance
+        myBalance = getBalanceWallet(api)
+        myPower = myBalance[1]
+        #select data from history
+        data=History.objects.filter(user=username, transection='Deposit').all().order_by('-id')
+        #select data from history
+        data=History.objects.filter(user=username, transection='Deposit').all().order_by('-id')
+        #Caculate Total Deposit
+        totalDeposit=History.objects.filter(user=username, transection='Deposit').values_list('energy')
+        depositEnergyList = []
+        rangeOfDepositList = int(len(totalDeposit))
+        for n in range(rangeOfDepositList):
+            depositEnergyList.append(totalDeposit[n][0])
+        totalDepositEnergy = sum(depositEnergyList)
+        return render(request,'deposit.html',
+        {
+        'power':myPower,
+        'data': data,
+        'totalDeposit': totalDepositEnergy
+        })
     
 def login(request):
     return render(request,'login.html')
@@ -306,7 +403,8 @@ def addUser(request):
             user.save()
             rpcconfig = rpcConfig.objects.create(
                     username=username,
-                    rpc_password=rpcpassword
+                    rpc_password=rpcpassword,
+                    permission=0
                 )
             rpcconfig.save()
 
@@ -314,7 +412,7 @@ def addUser(request):
             # add.save()
             return redirect('/login')
     else :
-        messages.info(request,'Password ไม่ตรงกัน')
+        messages.info(request,'Username or password is not correct')
         return redirect('/register')
 
 def loginForm(request):
@@ -323,10 +421,15 @@ def loginForm(request):
 
     #check username,password
     user=auth.authenticate(username=username,password=password)
-
+    permission =user.is_staff
+    print(permission)
     if user is not None:
-        auth.login(request,user)
-        return redirect('/home')
+        if permission == 1 :
+            auth.login(request,user)
+            return redirect('/homeAdmin')
+        else :
+            auth.login(request,user)
+            return redirect('/home')
     else :
         messages.info(request,"That ccount doesn't exist. Enter a different account or register")
         return redirect('/login')
@@ -372,15 +475,69 @@ def calcualtePriceSellAmount(request) :
     if(len(unit_amount) != 0 and len(price_amount) != 0):
         sell_price = float(unit_amount) * float(price_amount)
         print("total : "+str(float(sell_price)))
-        response = JsonResponse(status = 200 , data = { 'sellPrice' : sell_price })
+        response = JsonResponse(status = 200 , data = { 'sellPrice' : f"{sell_price:.2f}" })
         response.status_code = 200
         return response
     elif(len(unit_amount) != 0 and len(price_amount) == 0):
         sell_price = float(unit_amount) * 1.00
-        response = JsonResponse(status = 200 , data = { 'sellPrice' : sell_price })
+        response = JsonResponse(status = 200 , data = { 'sellPrice' : f"{sell_price:.2f}" })
         response.status_code = 200
         return response
     else:
         response = JsonResponse(status = 200 , data = { 'sellPrice' : 0.00 })
         response.status_code = 200
         return response
+    
+def homeAdmin(request):
+    data=walletTopUp.objects.all().order_by('timestamp')
+    return render(request,'homeAdmin.html',{
+        'posts':data,
+        })
+
+def regisAdmin(request):
+    username = request.POST['username']
+    ip = request.POST['ip']
+    permission = request.POST['permission']
+    findUser=User.objects.filter(username=username).all()
+    if len(findUser) != 0:
+        #Update ip and permission
+        update = rpcConfig.objects.get(username=username)
+        update.rpc_host = ip
+        update.permission = int(permission)
+        update.save() 
+        messages.info(request,'Update successfull')
+    else :
+        messages.info(request,'Username is not found')
+    data=walletTopUp.objects.all().order_by('timestamp')
+    return render(request,'homeAdmin.html',{
+        'posts':data,
+        })
+
+def topUpAdmin(request):
+    username = request.user   
+    api = getApi(username)
+    id_user = request.POST['id_amount']
+    amount = request.POST['amount']
+    timestamp = datetime.now()
+    #1.Get addresss and amount from table walletTopUp
+    findUser=walletTopUp.objects.filter(id=id_user, money=float(amount)).values_list('address','money','user')
+    #2.Check parameter have a value or not -> if not show warning message
+    if len(findUser) != 0:
+        address = str(findUser[0][0])
+        money = int(findUser[0][1])
+        cus_username = str(findUser[0][2])
+        #3. Make precess top up
+        api.issuemore(address, "ecoin", money)
+        #4. Insert into history
+        insertHistory = History.objects.create(user=cus_username, transection='TopUp', energy=0, price=0, ttlprice=money, timestamp=timestamp, blob="", status="", partner_name="-", txid="")
+        insertHistory.save()
+        #5. Delete record from id into table walletTopup
+        dId = walletTopUp.objects.get(id=id_user)
+        dId.delete()
+        messages.info(request,'Top Up successfull')
+    else :
+        messages.info(request,'Username is not found')
+    data=walletTopUp.objects.all().order_by('timestamp')
+    return render(request,'homeAdmin.html',{
+        'posts':data,
+        })
