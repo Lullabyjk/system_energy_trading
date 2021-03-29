@@ -1,0 +1,131 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<style>
+    table {
+      width: 100%;
+    }
+
+    thead, tbody, tr, td, th, tfoot { display: block; }
+
+    tr:after {
+        content: ' ';
+        display: block;
+        visibility: hidden;
+        clear: both;
+    }
+
+    thead th {
+        /* height: 30px; */
+
+        text-align:center;
+    }
+
+    tbody {
+        /* height: 345px; */
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    thead {
+        fallback:initial;
+    }
+    /* tbody td, thead th, tfoot th { */
+    tbody td, thead th {
+        width: 25%;
+        float: left;
+        
+      text-align:center;
+    }
+</style>
+<br>
+{% if messages %}
+<div class="alert alert-danger" role="alert">
+    {% for message in messages %}
+        {{message}}
+    {% endfor %}
+</div>
+{% endif %}
+<br>
+<h1 style="font-size:2vw;border-left-width:1000;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">Register User IP Address</h1>
+<br>
+<div class="form-group row">
+    <div class='col-6'>
+        <form action="/regisAdmin/" method="post">
+            {% csrf_token %}
+            <div class = "form-group row">
+                <label class = "col-3 col-form-label" ><h5>Username :</h5></label>
+                <div class = 'col-4'>
+                    <input type="text" min="0" class="form-control" name="username" required>
+                </div>
+            </div><br>
+            <div class = "form-group row">
+                <label class = "col-3 col-form-label" ><h5>IP Address :</h5></label>
+                <div class = 'col-4'>
+                    <input type="text" min="0" class="form-control" name="ip" required> 
+                </div>
+            </div><br>
+            <div class = "form-group row">
+                <label class = "col-3 col-form-label" ><h5>Permission :</h5></label>
+                <div class = 'col-4'>
+                    <input type="text" min="0" class="form-control" name="permission" required> 
+                </div>
+            </div><br>
+            <input type="submit" value="submit" class="btn btn-primary ">
+        </form>
+    </div>
+    <div class='col-6'>
+        <h4>Permission Type</h4>
+        <h5>Type <span class="badge bg-primary">0</span> <span> is consumer</span></h5>
+        <h5>Type <span class="badge bg-danger">1</span> <span> is Admin</span></h5>
+        <h5>Type <span class="badge bg-success">2</span> <span> is producer</span></h5>
+        <h5>Type <span class="badge bg-secondary">3</span> <span> is prosumer</span></h5>
+    </div>
+</div>
+
+<br>
+<h1 style="font-size:2vw;border-left-width:1000;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">Wallet Top Up list</h1>
+<br>
+<div class="form-group row">
+    <div class='col-6'>
+        <form action="/topUpAdmin/" method="post">
+            {% csrf_token %}
+            <div class = "form-group row">
+                <label class = "col-3 col-form-label" ><h5>ID :</h5></label>
+                <div class = 'col-4'>
+                    <input type="text" min="0" class="form-control" name="id_amount" required>
+                </div>
+            </div><br>
+            <div class = "form-group row">
+                <label class = "col-3 col-form-label" ><h5>Amount :</h5></label>
+                <div class = 'col-4'>
+                    <input type="text" min="0" class="form-control" name="amount" required> 
+                </div>
+                <label class = "col-1 col-form-label" ><h5>THB</h5></label>
+            </div><br>
+            <input type="submit" value="submit" class="btn btn-primary ">
+        </form>
+    </div>
+</div>
+<br>
+<table class="table table-dark table-hover">
+    <thead>
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">Timestamp</th>
+        <th scope="col">Username</th>
+        <th scope="col">Amount (THB)</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for post in posts %}
+      <tr>
+        <td>{{ post.id }}</td>
+        <td>{{ post.timestamp }}</td>
+        <td>{{ post.user }}</td>
+        <td>{{ post.money }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
