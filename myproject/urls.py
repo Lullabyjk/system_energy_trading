@@ -34,5 +34,8 @@ urlpatterns = [
     path('info/',views.info),
     path('topUp/',views.topUp),
     path('deposit/',views.deposit),
+    path('homeAdmin/',views.homeAdmin),
+    path('regisAdmin/',views.regisAdmin),
+    path('topUpAdmin/',views.topUpAdmin),
     path('api/v1/calcualtePriceSellAmount',views.calcualtePriceSellAmount)
 ]
