@@ -28,6 +28,7 @@ urlpatterns = [
     path('login/',views.login),
     path('logout/',views.logout),
     path('buy/',views.buy),
+    path('edit/<int:id>',views.edit),
     path('buyMatch/',views.buyMatch),
     path('sell/',views.sell),
     path('sellForm/',views.sellForm),
@@ -37,5 +38,6 @@ urlpatterns = [
     path('homeAdmin/',views.homeAdmin),
     path('regisAdmin/',views.regisAdmin),
     path('topUpAdmin/',views.topUpAdmin),
+    path('approve/<int:id>',views.topUpAdminSelect),
     path('api/v1/calcualtePriceSellAmount',views.calcualtePriceSellAmount)
 ]
