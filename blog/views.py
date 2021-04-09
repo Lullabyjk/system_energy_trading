@@ -20,8 +20,8 @@ def getApi(username):
     rpcuser = 'multichainrpc'
     rpcpasswd = rpc_config
     rpchost = rpcConfig.objects.filter(username=username).values_list('rpc_host', flat=True)[0]
-    rpcport = '9228'
-    chainname = 'energytp'
+    rpcport = '9562'
+    chainname = 'powerbc'
     api = Savoir(rpcuser, rpcpasswd, rpchost, rpcport, chainname)
     return api
 
@@ -164,7 +164,7 @@ def buyMatch(request):
             else:
                 messages.info(request,'Not found offering match with your biding.')                                                                     
         else:
-            messages.info(request,'Your wallet is successful.')    
+            messages.info(request,'Your wallet is not enough.')    
     else:
         messages.info(request,'Not found offering match with your biding.')   
     data=Sell.objects.all().exclude(user=username)
@@ -421,17 +421,18 @@ def loginForm(request):
 
     #check username,password
     user=auth.authenticate(username=username,password=password)
-    permission =user.is_staff
-    print(permission)
     if user is not None:
-        if permission == 1 :
+        # Check is Admin
+        permissionAdmin1 = int(user.is_superuser)
+        permissionAdmin2 = int(user.is_staff)
+        if permissionAdmin1 == 1 and permissionAdmin2 == 1 :
             auth.login(request,user)
             return redirect('/homeAdmin')
         else :
             auth.login(request,user)
             return redirect('/home')
     else :
-        messages.info(request,"That ccount doesn't exist. Enter a different account or register")
+        messages.info(request,"Username or password is not correct. Enter a different account or register")
         return redirect('/login')
 
 def logout(request):
@@ -442,12 +443,77 @@ def buy(request):
     username = request.user  
     api = getApi(username)
     myWallet = getBalanceWallet(api)
+    coin = myWallet[0]
     energy = myWallet[1]
     data=Sell.objects.all().exclude(user=username)
     return render(request,'buy.html', {
         'posts':data,
-        'power':energy
+        'power':energy,
+        'wallet':coin
         })
+
+def edit(request, id):
+    timestamp = datetime.now()
+    username = request.user
+    api = getApi(username)
+    myBalance = getBalanceWallet(api)
+    myCoin = myBalance[0]
+    myPower = myBalance[1]
+
+    #Get firstname
+    firstName = User.objects.filter(username=username).values_list('first_name')
+    buyName = str(firstName[0][0])
+    print("Buy name :"+buyName)
+
+    #Select Sell.blob from Sell where Sell.energy like unit and Sell.price like price
+    listBlob=Sell.objects.filter(id=id).values_list('blob', 'user', 'fname', 'ttlprice', 'energy', 'price')
+    if(len(listBlob)!=0):
+        blob = listBlob[0][0]
+        userBlob = listBlob[0][1]
+        sellName = listBlob[0][2]
+        ttlprice = listBlob[0][3]
+        unit = listBlob[0][4]
+        price = listBlob[0][5]
+
+        print("Blob name :"+str(userBlob))
+        print("Sell username :"+str(username))
+        print("Sell name :"+str(sellName))
+
+        #If coin not enough
+        if(float(myCoin)>=float(ttlprice)):
+            #If usersell is not login user
+            if(str(userBlob)!=str(username)) :
+                #match buy process
+                res1 = api.preparelockunspent({"ecoin": float(ttlprice)})
+                print(res1)
+                res2 = api.appendrawexchange(str(blob), res1["txid"], res1["vout"],{"energy": float(unit)})
+                print(res2)
+                txid = str(api.sendrawtransaction(res2["hex"]))
+                print(txid)
+
+                #Update status blob with transection = sell
+                updateStatus = History.objects.get(blob=str(blob))
+                updateStatus.status = 'Sold out'  # change status
+                updateStatus.txid = txid
+                updateStatus.partner_name = buyName
+                updateStatus.save() # this will update only
+
+                #Insert transection buy with blob
+                insertHistory = History.objects.create(user=str(username), transection='Bid', energy=float(unit), price=float(price), ttlprice=float(ttlprice), timestamp=timestamp, blob=str(blob), status='', partner_name=str(sellName), txid=txid)
+                insertHistory.save()
+
+                #Delete record blob = blob
+                dBlob = Sell.objects.get(blob=blob)
+                dBlob.delete()
+                messages.info(request,'Your biding is successful.')
+            else:
+                messages.info(request,'Not found offering match with your biding.')                                                                     
+        else:
+            messages.info(request,'Your wallet is not enough.')    
+    else:
+        messages.info(request,'Not found offering match with your biding.')   
+    data=Sell.objects.all().exclude(user=username)
+    return redirect('/buy')
 
 # def sell(request):
 #     return render(request,'sell.html')
@@ -495,16 +561,42 @@ def homeAdmin(request):
         })
 
 def regisAdmin(request):
+    #Get data from input
     username = request.POST['username']
     ip = request.POST['ip']
     permission = request.POST['permission']
+
+    # Check input permission type
+    listPermis = [0,0]
+    if int(permission) == 0 :
+        listPermis[0] = 1;
+        listPermis[1] = 1;
+    elif int(permission) == 1 :
+        listPermis[0] = 0;
+        listPermis[1] = 0;
+    elif int(permission) == 2 :
+        listPermis[0] = 0;
+        listPermis[1] = 1;
+    elif int(permission) == 3 :
+        listPermis[0] = 1;
+        listPermis[1] = 0;
+    else :
+        messages.info(request,'Incorrect permission type!!')
+        return render(request,'homeAdmin.html',)
+
+    #Check user
     findUser=User.objects.filter(username=username).all()
     if len(findUser) != 0:
-        #Update ip and permission
-        update = rpcConfig.objects.get(username=username)
-        update.rpc_host = ip
-        update.permission = int(permission)
-        update.save() 
+        #Update ip
+        updateIp = rpcConfig.objects.get(username=username)
+        updateIp.rpc_host = ip
+        updateIp.permission = int(permission)
+        updateIp.save() 
+        #update permission
+        updatePermis = User.objects.get(username=username)
+        updatePermis.is_superuser = listPermis[0]
+        updatePermis.is_staff = listPermis[1]
+        updatePermis.save() 
         messages.info(request,'Update successfull')
     else :
         messages.info(request,'Username is not found')
@@ -521,11 +613,13 @@ def topUpAdmin(request):
     timestamp = datetime.now()
     #1.Get addresss and amount from table walletTopUp
     findUser=walletTopUp.objects.filter(id=id_user, money=float(amount)).values_list('address','money','user')
+    print(findUser)
     #2.Check parameter have a value or not -> if not show warning message
     if len(findUser) != 0:
         address = str(findUser[0][0])
-        money = int(findUser[0][1])
+        money = float(findUser[0][1])
         cus_username = str(findUser[0][2])
+        print(findUser)
         #3. Make precess top up
         api.issuemore(address, "ecoin", money)
         #4. Insert into history
@@ -537,6 +631,36 @@ def topUpAdmin(request):
         messages.info(request,'Top Up successfull')
     else :
         messages.info(request,'Username is not found')
+    data=walletTopUp.objects.all().order_by('timestamp')
+    return render(request,'homeAdmin.html',{
+        'posts':data,
+        })
+
+def topUpAdminSelect(request, id):
+    username = request.user   
+    api = getApi(username)
+    timestamp = datetime.now()
+    #1.Get addresss and amount from table walletTopUp
+    findUser=walletTopUp.objects.filter(id=id).values_list('address','money','user')
+    print(findUser)
+    #2.Check parameter have a value or not -> if not show warning message
+    if len(findUser) != 0:
+        address = str(findUser[0][0])
+        money = float(findUser[0][1])
+        cus_username = str(findUser[0][2])
+        print(findUser)
+        #3. Make precess top up
+        api.issuemore(address, "ecoin", money)
+        #4. Insert into history
+        insertHistory = History.objects.create(user=cus_username, transection='TopUp', energy=0, price=0, ttlprice=money, timestamp=timestamp, blob="", status="", partner_name="-", txid="")
+        insertHistory.save()
+        #5. Delete record from id into table walletTopup
+        dId = walletTopUp.objects.get(id=id)
+        dId.delete()
+        messages.info(request,'Top Up successfull')
+    else :
+        messages.info(request,'Username is not found')
+    
     data=walletTopUp.objects.all().order_by('timestamp')
     return render(request,'homeAdmin.html',{
         'posts':data,
