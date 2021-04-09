@@ -49,6 +49,18 @@
 <br>
 <div class="form-group row">
   <div class='col-6'>
+    <h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">My Current Wallet</h2>
+    <br>
+    <div class="form-group row">
+      <div class="col-4">
+        <h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">{{money}}</h2>
+      </div>
+      <div class="col-2">
+        <h2>THB</h2>
+      </div>
+    </div>
+  </div>
+  <div class='col-6'>
     <h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">Total Money Top Up</h2>
     <br>
     <div class="form-group row">
@@ -61,24 +73,25 @@
     </div>
   </div>
 
-  <div class='col-6'>
+  <div class='col-12'>
+    <br>
     <h2 align='left' style="font-size:2vw;background-color:rgb(31, 30, 30);color: rgb(255, 255, 255);border-radius: 15px;padding: 5px;padding-left: 20px;">Money Top Up</h2>
     <br>
     <form action="/topUp/" method="post" >
       {% csrf_token %}
       <div class = "form-group row">
-        <div class="col-4">
+        <div class="col-2">
           <div style="font-weight: bold;padding-left: 20px;font-size: 2vw;">Money :</div>
         </div>
-        <div class="col-4" style="margin: auto;margin-left:0px;margin-right:0px;">
-          <input type="text" min="0" class="form-control" name="moneyTopUp" placeholder="{{money}}" required> 
+        <div class="col-2" style="margin: auto;margin-left:0px;margin-right:0px;">
+          <input type="text" min="0" class="form-control" name="moneyTopUp" required> 
         </div>
         <div class="col-2">
           <div style="font-weight: bold;padding-left: 20px;font-size: 2vw;">THB</div>
         </div>
       </div>
       <br> 
-      <div class="col-10" >
+      <div class="col-5" >
         <input style="float: right;" type="submit" value="submit" class="btn btn-primary ">
       </div>
       
